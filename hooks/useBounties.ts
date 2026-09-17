@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import type { Bounty, StatusFilter } from '@/types';
-import { listBounties } from '@/lib/indexer';
+import { getBounties } from '@/lib/indexer';
 
 /**
  * Fetches and manages a list of bounties from the indexer.
@@ -17,9 +17,9 @@ export function useBounties(statusFilter: StatusFilter = null) {
     setLoading(true);
     setError(null);
     try {
-      const res = await listBounties({ status: statusFilter ?? undefined });
-      setBounties(res.bounties);
-      setTotal(res.total);
+      const res = await getBounties(statusFilter);
+      setBounties(res.data);
+      setTotal(res.meta.total);
     } catch (e: any) {
       setError(e.message);
     } finally {

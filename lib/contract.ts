@@ -1,85 +1,111 @@
+import { TransactionBuilder, Networks, Address, xdr, scValToNative, rpc, Operation } from "@stellar/stellar-sdk";
+import { signTxFreighter } from "./freighter";
+import { Network } from "../types";
+import { toContractAmount } from "./usdc";
+
+const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC_URL || "https://soroban-testnet.stellar.org";
+const NETWORK_PASSPHRASE = process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE || Networks.TESTNET;
+const CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID as string;
+const USDC_ID = process.env.NEXT_PUBLIC_USDC_ID as string;
+
+const server = new rpc.Server(RPC_URL);
+
 /**
- * Soroban contract interaction layer.
- * All stellar-sdk usage is confined to this file.
- * Nothing else in the app imports stellar-sdk directly.
+ * Common logic to submit a transaction.
  */
-import type { Network, Bounty, PostBountyParams, StatusFilter, BountyStatus } from '@/types';
-import { CONTRACT_ERRORS } from './constants';
+async function submitTransaction(
+  sourceAddress: string,
+  methodName: string,
+  args: xdr.ScVal[]
+): Promise<string> {
+  // 1. Get source account details
+  const sourceAccount = await server.getAccount(sourceAddress);
+  
+  // 2. Build the transaction
+  const tx = new TransactionBuilder(sourceAccount, {
+    fee: "100",
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(
+      Operation.invokeContractFunction({
+        contract: CONTRACT_ID,
+        function: methodName,
+        args: args,
+      })
+    )
+    .setTimeout(30)
+    .build();
 
-// TODO: import { SorobanRpc, Contract, TransactionBuilder, ... } from '@stellar/stellar-sdk';
+  // 3. Prepare the transaction
+  const preparedTx = await server.prepareTransaction(tx);
 
-/** Parse a contract error code into a user-facing message. */
-export function parseContractError(error: unknown): string {
-  // TODO: extract error code from SorobanRpc.SimulateTransactionError
-  if (error instanceof Error) {
-    const match = error.message.match(/Error\(Contract, #(\d+)\)/);
-    if (match) {
-      const code = parseInt(match[1], 10);
-      return CONTRACT_ERRORS[code] ?? 'An unknown contract error occurred.';
-    }
-    return error.message;
+  // 4. Sign via Freighter
+  const signedXdr = await signTxFreighter(preparedTx.toXDR(), NETWORK_PASSPHRASE);
+  
+  // 5. Submit to network
+  const submitResponse = await server.sendTransaction(
+    TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE) as any
+  );
+
+  if (submitResponse.status === "ERROR") {
+    throw new Error(`Transaction failed: ${JSON.stringify(submitResponse.errorResult || submitResponse)}`);
   }
-  return 'An unexpected error occurred.';
+
+  // 6. Wait for transaction to complete
+  let txStatus: rpc.Api.GetTransactionResponse;
+  do {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    txStatus = await server.getTransaction(submitResponse.hash);
+  } while (txStatus.status === "NOT_FOUND");
+
+  if (txStatus.status === "FAILED") {
+    throw new Error(`Transaction execution failed: ${txStatus.resultMetaXdr}`);
+  }
+
+  return submitResponse.hash;
 }
 
-// ---------------------------------------------------------------------------
-// Read functions — no wallet needed
-// ---------------------------------------------------------------------------
-
-/**
- * Fetch a single bounty by ID directly from the contract.
- * Prefer lib/indexer.ts getBounty() for speed; use this as fallback.
- */
-export async function getBounty(id: bigint, network: Network): Promise<Bounty> {
-  // TODO: build SimulateTransaction for get_bounty(id)
-  throw new Error('contract.getBounty not implemented');
+// Write Operations
+export async function postBounty(
+  owner: string,
+  title: string,
+  description: string,
+  amountUSDC: string
+): Promise<string> {
+  const args = [
+    Address.fromString(owner).toScVal(),
+    xdr.ScVal.scvString(title),
+    xdr.ScVal.scvString(description),
+    xdr.ScVal.scvI128(new xdr.Int128Parts({
+        hi: 0n,
+        lo: BigInt(toContractAmount(amountUSDC))
+    })),
+    Address.fromString(USDC_ID).toScVal(),
+    xdr.ScVal.scvU64(0n) // 0 deadline = no deadline
+  ];
+  return submitTransaction(owner, "post_bounty", args);
 }
 
-/** List bounties with optional status filter. Prefer indexer for speed. */
-export async function listBounties(filter: StatusFilter, network: Network): Promise<Bounty[]> {
-  // TODO: build SimulateTransaction for list_bounties(status, 0, 50)
-  throw new Error('contract.listBounties not implemented');
+export async function claimBounty(claimant: string, bountyId: number): Promise<string> {
+  const args = [
+    Address.fromString(claimant).toScVal(),
+    xdr.ScVal.scvU64(BigInt(bountyId)),
+  ];
+  return submitTransaction(claimant, "claim_bounty", args);
 }
 
-/** Get the total number of bounties ever posted. */
-export async function getBountyCount(network: Network): Promise<bigint> {
-  // TODO: build SimulateTransaction for get_bounty_count()
-  throw new Error('contract.getBountyCount not implemented');
+export async function approveCompletion(owner: string, bountyId: number): Promise<string> {
+  const args = [
+    Address.fromString(owner).toScVal(),
+    xdr.ScVal.scvU64(BigInt(bountyId)),
+  ];
+  return submitTransaction(owner, "approve_completion", args);
 }
 
-// ---------------------------------------------------------------------------
-// Write functions — require signed transaction from Freighter
-// All return the transaction hash.
-// ---------------------------------------------------------------------------
-
-/**
- * Post a new bounty. Transfers USDC from owner into contract.
- * Returns the transaction hash.
- */
-export async function postBounty(params: PostBountyParams, network: Network): Promise<string> {
-  // TODO:
-  // 1. Build transaction calling post_bounty(...)
-  // 2. Simulate to get footprint
-  // 3. Sign via lib/freighter.ts signTransaction()
-  // 4. Submit via rpc.sendTransaction()
-  // 5. Return tx hash
-  throw new Error('contract.postBounty not implemented');
-}
-
-/** Claim an open bounty. Returns the transaction hash. */
-export async function claimBounty(bountyId: bigint, network: Network): Promise<string> {
-  // TODO: build, sign, and submit claim_bounty(claimant, bountyId)
-  throw new Error('contract.claimBounty not implemented');
-}
-
-/** Approve completion of a claimed bounty. Returns the transaction hash. */
-export async function approveCompletion(bountyId: bigint, network: Network): Promise<string> {
-  // TODO: build, sign, and submit approve_completion(owner, bountyId)
-  throw new Error('contract.approveCompletion not implemented');
-}
-
-/** Cancel a bounty. Returns USDC to the owner. Returns the transaction hash. */
-export async function cancelBounty(bountyId: bigint, network: Network): Promise<string> {
-  // TODO: build, sign, and submit cancel_bounty(owner, bountyId)
-  throw new Error('contract.cancelBounty not implemented');
+export async function cancelBounty(owner: string, bountyId: number): Promise<string> {
+  const args = [
+    Address.fromString(owner).toScVal(),
+    xdr.ScVal.scvU64(BigInt(bountyId)),
+  ];
+  return submitTransaction(owner, "cancel_bounty", args);
 }

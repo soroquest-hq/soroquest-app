@@ -6,7 +6,7 @@ import { getBounty } from '@/lib/indexer';
 /**
  * Fetches and manages a single bounty by ID from the indexer.
  */
-export function useBounty(id: bigint | null) {
+export function useBounty(id: number | null) {
   const [bounty, setBounty] = useState<Bounty | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

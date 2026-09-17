@@ -1,43 +1,39 @@
-'use client';
-import { useState, useEffect, useCallback } from 'react';
-import type { WalletState, Network } from '@/types';
-import * as freighter from '@/lib/freighter';
+import { useState, useEffect, useCallback } from "react";
+import { WalletState } from "../types";
+import { connectFreighter } from "../lib/freighter";
 
-const initialState: WalletState = {
-  connected: false,
-  publicKey: null,
-  network: null,
-};
-
-/**
- * Manages Freighter wallet connection state.
- * Returns the current wallet state and connect/disconnect handlers.
- */
 export function useWallet() {
-  const [wallet, setWallet] = useState<WalletState>(initialState);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [wallet, setWallet] = useState<WalletState>({
+    publicKey: null,
+    connected: false,
+    network: null,
+  });
 
   const connect = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
-      // TODO: call freighter.isConnected(), getPublicKey(), getNetwork()
-      // update wallet state
-      throw new Error('useWallet.connect not implemented');
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
+      const state = await connectFreighter();
+      setWallet(state);
+      localStorage.setItem("wallet_connected", "true");
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Failed to connect wallet");
     }
   }, []);
 
   const disconnect = useCallback(() => {
-    setWallet(initialState);
+    setWallet({
+      publicKey: null,
+      connected: false,
+      network: null,
+    });
+    localStorage.removeItem("wallet_connected");
   }, []);
 
-  // TODO: auto-connect on mount if Freighter is already connected
-  // TODO: listen for Freighter network change events
+  useEffect(() => {
+    if (localStorage.getItem("wallet_connected") === "true") {
+      connect().catch(console.error);
+    }
+  }, [connect]);
 
-  return { wallet, loading, error, connect, disconnect };
+  return { wallet, connect, disconnect };
 }

@@ -1,43 +1,48 @@
-/**
- * Freighter wallet helpers.
- * All Freighter calls are wrapped here.
- * Components never import `@stellar/freighter-api` directly.
- */
-import type { Network } from '@/types';
-
-/** Returns the connected wallet's public key, or throws if not connected. */
-export async function getPublicKey(): Promise<string> {
-  // TODO: import { getPublicKey } from '@stellar/freighter-api'; return await getPublicKey();
-  throw new Error('Freighter not implemented');
-}
-
-/** Returns the network the wallet is currently set to. */
-export async function getNetwork(): Promise<Network> {
-  // TODO: import { getNetworkDetails } from '@stellar/freighter-api';
-  throw new Error('Freighter not implemented');
-}
-
-/** Returns true if Freighter is installed and an account is connected. */
-export async function isConnected(): Promise<boolean> {
-  // TODO: import { isConnected } from '@stellar/freighter-api';
-  throw new Error('Freighter not implemented');
-}
+import {
+  isConnected,
+  getAddress,
+  signTransaction,
+} from "@stellar/freighter-api";
+import { WalletState, Network } from "../types";
 
 /**
- * Signs a transaction XDR with Freighter.
- * @param xdr - The base64-encoded XDR of the transaction to sign.
- * @param network - The network to sign for.
- * @returns The signed transaction XDR.
+ * Connect to Freighter and get the public key.
  */
-export async function signTransaction(xdr: string, network: string): Promise<string> {
-  // TODO: import { signTransaction } from '@stellar/freighter-api';
-  throw new Error('Freighter not implemented');
+export async function connectFreighter(): Promise<WalletState> {
+  const connected = await isConnected();
+  if (!connected) {
+    throw new Error("Freighter is not installed or locked.");
+  }
+
+  const addressRes = await getAddress();
+  if (addressRes.error) {
+    throw new Error(addressRes.error.message || "User denied connection or error occurred.");
+  }
+  const publicKey = addressRes.address;
+
+  if (!publicKey) {
+    throw new Error("No public key returned.");
+  }
+
+  return {
+    publicKey,
+    connected: true,
+    network: "testnet" as Network, // Fixed to testnet for now as per simple requirements
+  };
 }
 
-/** User-facing error messages for Freighter failure modes. */
-export const FREIGHTER_ERRORS = {
-  notInstalled: 'Freighter wallet is not installed. Please install it from freighter.app.',
-  rejected: 'Transaction was rejected. Please approve it in Freighter to continue.',
-  wrongNetwork: 'Wrong network in Freighter. Please switch to the correct network.',
-  unknown: 'An unexpected wallet error occurred. Please try again.',
-} as const;
+/**
+ * Sign a transaction using Freighter.
+ * @param xdr - The transaction XDR string
+ * @param networkPassphrase - The network passphrase
+ * @returns The signed transaction XDR string
+ */
+export async function signTxFreighter(xdr: string, networkPassphrase: string): Promise<string> {
+  const res = await signTransaction(xdr, {
+    networkPassphrase,
+  });
+  if (res.error) {
+    throw new Error(res.error.message || "Failed to sign transaction.");
+  }
+  return res.signedTxXdr;
+}
