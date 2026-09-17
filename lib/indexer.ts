@@ -5,10 +5,14 @@ const API_BASE = process.env.NEXT_PUBLIC_INDEXER_URL || "http://localhost:8080";
 export async function getBounties(
   status?: StatusFilter,
   limit = 50,
-  offset = 0
+  offset = 0,
+  owner?: string,
+  claimant?: string
 ): Promise<{ data: Bounty[]; meta: any }> {
   const params = new URLSearchParams();
   if (status) params.append("status", status);
+  if (owner) params.append("owner", owner);
+  if (claimant) params.append("claimant", claimant);
   params.append("limit", limit.toString());
   params.append("offset", offset.toString());
 

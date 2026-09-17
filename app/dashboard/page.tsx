@@ -1,24 +1,46 @@
 'use client';
-import React from 'react';
-// TODO: import useWallet, useBounties
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useWallet } from '@/hooks/useWallet';
+import { useBounties } from '@/hooks/useBounties';
+import BountyList from '@/components/bounty/BountyList';
 
 export default function DashboardPage() {
-  // TODO: if not connected, show "Connect wallet" prompt
-  // TODO: filter bounties by owner === wallet.publicKey (my posted)
-  // TODO: filter bounties by claimant === wallet.publicKey (my claimed)
+  const { wallet } = useWallet();
+  const router = useRouter();
+  const [mounted, setMounted] = React.useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (mounted && !wallet.connected) {
+      router.push('/');
+    }
+  }, [wallet.connected, mounted, router]);
+
+  const { bounties: postedBounties, loading: postedLoading, error: postedError } = useBounties(null, 50, wallet.publicKey || undefined);
+  const { bounties: claimedBounties, loading: claimedLoading, error: claimedError } = useBounties(null, 50, undefined, wallet.publicKey || undefined);
+
+  if (!mounted || !wallet.connected) return null;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">My Dashboard</h1>
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">My Posted Bounties</h2>
-        {/* TODO: <BountyList> filtered by owner */}
-        <p className="text-gray-500">Connect your wallet to see your posted bounties.</p>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">My Dashboard</h1>
+      
+      <section className="mb-12">
+        <h2 className="text-2xl font-semibold mb-6">My Posted Bounties</h2>
+        <BountyList bounties={postedBounties} loading={postedLoading} error={postedError} />
+        {!postedLoading && postedBounties.length === 0 && (
+          <p className="text-gray-500 py-4">You have not posted any bounties yet.</p>
+        )}
       </section>
+      
       <section>
-        <h2 className="text-xl font-semibold mb-4">My Claimed Bounties</h2>
-        {/* TODO: <BountyList> filtered by claimant */}
-        <p className="text-gray-500">Connect your wallet to see your claimed bounties.</p>
+        <h2 className="text-2xl font-semibold mb-6">My Claimed Bounties</h2>
+        <BountyList bounties={claimedBounties} loading={claimedLoading} error={claimedError} />
+        {!claimedLoading && claimedBounties.length === 0 && (
+          <p className="text-gray-500 py-4">You have not claimed any bounties yet.</p>
+        )}
       </section>
     </div>
   );
