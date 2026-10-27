@@ -17,9 +17,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-          cache-dependency-path: soroquest-app/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -38,4 +37,3 @@ jobs:
         env:
           NEXT_PUBLIC_TESTNET_CONTRACT_ID: "CA7C6LGWPTZVUTZX7EXJVLWCQG6DVWPROBPO3FGXYKEY4W5H4HRPO5UV"
           NEXT_PUBLIC_INDEXER_URL: "https://soroquest-indexer.onrender.com"
-
