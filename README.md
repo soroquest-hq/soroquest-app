@@ -1,6 +1,10 @@
 # soroquest-app
 
+[![CI](https://github.com/soroquest-hq/soroquest-app/actions/workflows/ci.yml/badge.svg)](https://github.com/soroquest-hq/soroquest-app/actions/workflows/ci.yml)
+
 The web interface for the SoroQuest bounty platform.
+
+Live deployment: [soroquest-app.vercel.app](https://soroquest-app.vercel.app)
 
 Built with Next.js 14, TypeScript, Tailwind CSS, and the Stellar SDK.
 
@@ -31,4 +35,4 @@ Deploys automatically to Vercel on push to `main`.
 
 ## License
 
-MIT
+Apache-2.0
