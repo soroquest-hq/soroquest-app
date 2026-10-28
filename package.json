@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "node --test 'lib/**/*.test.ts'"
+    "test": "node --test 'lib/**/*.test.ts'",
+    "test:coverage": "node --test --experimental-test-coverage 'lib/**/*.test.ts'",
+    "verify": "npm run type-check && npm run lint && npm test"
   },
   "dependencies": {
     "@stellar/freighter-api": "^6.0.1",
