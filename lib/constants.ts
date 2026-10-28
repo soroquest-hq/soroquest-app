@@ -1,7 +1,7 @@
 import { Network } from '@/types';
 
 export const CONTRACT_ID: Record<Network, string> = {
-  testnet: process.env.NEXT_PUBLIC_TESTNET_CONTRACT_ID ?? '',
+  testnet: process.env.NEXT_PUBLIC_TESTNET_CONTRACT_ID || process.env.NEXT_PUBLIC_CONTRACT_ID || 'CA7C6LGWPTZVUTZX7EXJVLWCQG6DVWPROBPO3FGXYKEY4W5H4HRPO5UV',
   mainnet: process.env.NEXT_PUBLIC_MAINNET_CONTRACT_ID ?? '',
 };
 

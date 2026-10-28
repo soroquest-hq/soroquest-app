@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { getBounties } from '@/lib/indexer';
 
-const CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID as string;
+const CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID || process.env.NEXT_PUBLIC_TESTNET_CONTRACT_ID || 'CA7C6LGWPTZVUTZX7EXJVLWCQG6DVWPROBPO3FGXYKEY4W5H4HRPO5UV';
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE?.includes('Test') ? 'testnet' : 'public';
 
 export default async function Home() {

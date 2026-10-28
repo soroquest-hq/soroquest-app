@@ -5,8 +5,8 @@ import { toContractAmount } from "./usdc";
 
 const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC_URL || "https://soroban-testnet.stellar.org";
 const NETWORK_PASSPHRASE = process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE || Networks.TESTNET;
-const CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID as string;
-const USDC_ID = process.env.NEXT_PUBLIC_USDC_ID as string;
+const CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID || process.env.NEXT_PUBLIC_TESTNET_CONTRACT_ID || "CA7C6LGWPTZVUTZX7EXJVLWCQG6DVWPROBPO3FGXYKEY4W5H4HRPO5UV";
+const USDC_ID = process.env.NEXT_PUBLIC_USDC_ID || "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA";
 
 const server = new rpc.Server(RPC_URL);
 
