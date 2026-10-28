@@ -28,3 +28,4 @@ export default function Badge({ label, variant = 'neutral', dot = false }: Badge
     </span>
   );
 }
+

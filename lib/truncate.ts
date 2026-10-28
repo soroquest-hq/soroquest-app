@@ -6,3 +6,4 @@ export function truncateAddress(address?: string | null, start = 4, end = 4): st
   if (address.length <= start + end) return address;
   return `${address.slice(0, start)}...${address.slice(-end)}`;
 }
+

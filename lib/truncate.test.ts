@@ -19,3 +19,4 @@ describe('Address truncation utility', () => {
     assert.strictEqual(truncateAddress(hash, 6, 4), 'abcdef...7890');
   });
 });
+

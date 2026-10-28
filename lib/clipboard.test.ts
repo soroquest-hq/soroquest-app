@@ -8,3 +8,4 @@ describe('Clipboard utility fallback', () => {
     assert.strictEqual(result, false);
   });
 });
+
